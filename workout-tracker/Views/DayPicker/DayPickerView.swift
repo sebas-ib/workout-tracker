@@ -32,8 +32,6 @@ struct DayPickerView: View {
     var body: some View {
         NavigationStack {
             List {
-                // MARK: - Consistency Graph
-
                 Section {
                     ConsistencyGraphView()
                         .frame(maxWidth: .infinity)
@@ -47,8 +45,6 @@ struct DayPickerView: View {
                         )
                         .listRowBackground(Color.clear)
                 }
-
-                // MARK: - Date Picker
 
                 Section {
                     DatePicker(
@@ -64,20 +60,38 @@ struct DayPickerView: View {
                     }
                 }
 
-                // MARK: - Workout
-
-                if let day = selectedDay {
+                if let day = selectedDay, !day.sessions.isEmpty {
                     DaySummaryView(day: day)
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .top)
+                                    .combined(with: .opacity),
+                                removal: .move(edge: .top)
+                                    .combined(with: .opacity)
+                            )
+                        )
 
-                    if !day.sessions.isEmpty {
-                        SessionListView(workoutDay: day)
-                    } else {
-                        emptyWorkoutSection
-                    }
+                    SessionListView(workoutDay: day)
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .bottom)
+                                    .combined(with: .opacity),
+                                removal: .move(edge: .bottom)
+                                    .combined(with: .opacity)
+                            )
+                        )
                 } else {
                     emptyWorkoutSection
+                        .transition(
+                            .asymmetric(
+                                insertion: .scale(scale: 0.95)
+                                    .combined(with: .opacity),
+                                removal: .scale(scale: 0.95)
+                                    .combined(with: .opacity)
+                            )
+                        )
                 }
             }
             .listStyle(.insetGrouped)
@@ -108,33 +122,41 @@ struct DayPickerView: View {
         }
     }
 
-    // MARK: - Empty State
-
     private var emptyWorkoutSection: some View {
         Section {
-            ContentUnavailableView(
-                "No Workouts Logged",
-                systemImage: "figure.strengthtraining.traditional",
-                description: Text(
-                    "Start a session to begin tracking your workout."
+            VStack(spacing: 20) {
+                ContentUnavailableView(
+                    "No Workouts Logged",
+                    systemImage: "figure.strengthtraining.traditional",
+                    description: Text(
+                        "Start a session to begin tracking your workout."
+                    )
                 )
-            )
-            .frame(maxWidth: .infinity)
 
-            Button {
-                startNewSession()
-            } label: {
-                Label(
-                    "Start Session",
-                    systemImage: "plus.circle.fill"
-                )
-                .frame(maxWidth: .infinity)
+                Button {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
+                        startNewSession()
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle.fill")
+                        Text("Start Session")
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
             }
-            .buttonStyle(.borderedProminent)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 220)
+            .padding(.vertical, 20)
         }
+        .transition(
+            .asymmetric(
+                insertion: .opacity,
+                removal: .scale(scale: 0.95).combined(with: .opacity)
+            )
+        )
     }
-
-    // MARK: - Save Error
 
     private var saveErrorBinding: Binding<Bool> {
         Binding(
@@ -149,7 +171,6 @@ struct DayPickerView: View {
         )
     }
 
-    // MARK: - Actions
 
     private func startNewSession() {
         let day: WorkoutDay

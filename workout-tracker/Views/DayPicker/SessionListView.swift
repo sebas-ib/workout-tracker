@@ -129,12 +129,14 @@ struct SessionListView: View {
             return
         }
 
-        workoutDay.sessions.removeAll {
-            $0.persistentModelID == session.persistentModelID
-        }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+            workoutDay.sessions.removeAll {
+                $0.persistentModelID == session.persistentModelID
+            }
 
-        modelContext.delete(session)
-        sessionPendingDeletion = nil
+            modelContext.delete(session)
+            sessionPendingDeletion = nil
+        }
 
         saveChanges()
     }

@@ -9,7 +9,7 @@ import Testing
 import SwiftData
 @testable import workout_tracker
 
-struct ExerciseSeedingTests {
+struct WorkoutTrackerTests {
 
     @Test @MainActor func seedingPopulatesExercises() throws {
         let schema = Schema([Exercise.self])

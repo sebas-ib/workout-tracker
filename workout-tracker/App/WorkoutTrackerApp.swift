@@ -8,7 +8,7 @@ import SwiftUI
 import SwiftData
 
 @main
-struct workout_trackerApp: App {
+struct WorkoutTrackerApp: App {
     @StateObject private var unitSettings = UnitSettings()
     
     var sharedModelContainer: ModelContainer = {

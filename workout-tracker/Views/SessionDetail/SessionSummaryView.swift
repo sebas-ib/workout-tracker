@@ -1,36 +1,56 @@
-//
-//  SessionSummaryView.swift
-//  workout-tracker
-//
-//  Created by Sebastian Ibarra-Perez on 8/9/26.
-//
 import SwiftUI
 
 struct SessionSummaryView: View {
     @EnvironmentObject private var unitSettings: UnitSettings
     let session: WorkoutSession
     
-    private var displayVolume: Double {
-        unitSettings.unit.convert(fromLbs: WorkoutCalculations.totalVolume(for: session))
+    private var muscleGroupVolumes: [(group: MuscleGroup, volume: Double)] {
+        WorkoutCalculations.volumeByMuscleGroup(for: session)
+            .map { (group: $0.key, volume: $0.value) }
+            .sorted { $0.volume > $1.volume }
     }
     
     var body: some View {
-        HStack(spacing: 20) {
-            SummaryStat(
-                label: "Volume",
-                value: String(format: "%.0f", displayVolume),
-                unit: unitSettings.unit.rawValue
-            )
-            SummaryStat(
-                label: "Sets",
-                value: "\(WorkoutCalculations.totalSets(for: session))",
-                unit: ""
-            )
-            SummaryStat(
-                label: "Reps",
-                value: "\(WorkoutCalculations.totalReps(for: session))",
-                unit: ""
-            )
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 20) {
+                SummaryStat(
+                    label: "Sets",
+                    value: "\(WorkoutCalculations.totalSets(for: session))"
+                )
+                SummaryStat(
+                    label: "Reps",
+                    value: "\(WorkoutCalculations.totalReps(for: session))"
+                )
+                SummaryStat(
+                    label: "Exercises",
+                    value: "\(session.exercises.count)"
+                )
+            }
+            
+            if !muscleGroupVolumes.isEmpty {
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Volume by Muscle Group")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    ForEach(muscleGroupVolumes, id: \.group) { entry in
+                        HStack {
+                            Image(systemName: entry.group.icon)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 20)
+                            Text(entry.group.rawValue)
+                                .font(.subheadline)
+                            Spacer()
+                            Text("\(Int(unitSettings.unit.convert(fromLbs: entry.volume))) \(unitSettings.unit.rawValue)")
+                                .font(.subheadline.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
@@ -41,11 +61,10 @@ struct SessionSummaryView: View {
 private struct SummaryStat: View {
     let label: String
     let value: String
-    let unit: String
     
     var body: some View {
         VStack {
-            Text(value + (unit.isEmpty ? "" : " \(unit)"))
+            Text(value)
                 .font(.title3.bold())
             Text(label)
                 .font(.caption)

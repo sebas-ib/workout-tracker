@@ -10,8 +10,10 @@ struct DaySummaryView: View {
     @EnvironmentObject private var unitSettings: UnitSettings
     let day: WorkoutDay
     
-    private var displayVolume: Double {
-        unitSettings.unit.convert(fromLbs: WorkoutCalculations.totalVolume(for: day))
+    private var muscleGroupVolumes: [(group: MuscleGroup, volume: Double)] {
+        WorkoutCalculations.volumeByMuscleGroup(for: day)
+            .map { (group: $0.key, volume: $0.value) }
+            .sorted { $0.volume > $1.volume }
     }
     
     var body: some View {
@@ -21,12 +23,24 @@ struct DaySummaryView: View {
             
             HStack(spacing: 20) {
                 Label("\(day.sessions.count) session\(day.sessions.count == 1 ? "" : "s")", systemImage: "figure.strengthtraining.traditional")
-                Label(String(format: "%.0f \(unitSettings.unit.rawValue)", displayVolume), systemImage: "scalemass")
                 Label("\(WorkoutCalculations.totalSets(for: day)) sets", systemImage: "list.number")
             }
             .font(.caption)
             .foregroundStyle(.secondary)
+            
+            if !muscleGroupVolumes.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(muscleGroupVolumes.prefix(3), id: \.group) { entry in
+                        Text("\(entry.group.rawValue): \(Int(unitSettings.unit.convert(fromLbs: entry.volume)))\(unitSettings.unit.rawValue)")
+                            .font(.caption2)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color(.tertiarySystemBackground))
+                            .clipShape(Capsule())
+                    }
+                }
+            }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 20)
     }
 }

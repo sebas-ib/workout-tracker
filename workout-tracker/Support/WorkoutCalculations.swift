@@ -71,4 +71,31 @@ enum WorkoutCalculations {
         
         return result
     }
+    
+    /// Total volume broken down by muscle group for a session
+    static func volumeByMuscleGroup(for session: WorkoutSession) -> [MuscleGroup: Double] {
+        var result: [MuscleGroup: Double] = [:]
+        
+        for workoutExercise in session.exercises {
+            let group = workoutExercise.exercise.muscleGroup
+            let exerciseVolume = volume(for: workoutExercise)
+            result[group, default: 0] += exerciseVolume
+        }
+        
+        return result
+    }
+    
+    /// Same, aggregated across every session in a day
+    static func volumeByMuscleGroup(for day: WorkoutDay) -> [MuscleGroup: Double] {
+        var result: [MuscleGroup: Double] = [:]
+        
+        for session in day.sessions {
+            let sessionBreakdown = volumeByMuscleGroup(for: session)
+            for (group, volume) in sessionBreakdown {
+                result[group, default: 0] += volume
+            }
+        }
+        
+        return result
+    }
 }

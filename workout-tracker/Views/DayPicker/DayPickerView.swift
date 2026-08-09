@@ -21,6 +21,7 @@ struct DayPickerView: View {
     @State private var saveError: Error?
     @State private var showingNewSessionSheet = false
     @State private var newlyCreatedSession: WorkoutSession?
+    @State private var datePickerExpanded = false
 
     private var selectedDay: WorkoutDay? {
         workoutDays.first {
@@ -49,43 +50,11 @@ struct DayPickerView: View {
                 }
 
                 Section {
-                    DatePicker(
-                        "Select Day",
-                        selection: $selectedDate,
-                        in: ...Date(),
-                        displayedComponents: .date
-                    )
-                    .datePickerStyle(.graphical)
-                    .padding(.horizontal)
-                    .onChange(of: selectedDate) { _, newValue in
-                        selectedDate = Calendar.current.startOfDay(for: newValue)
-                    }
+                    datePickerContent
                 }
 
                 if let day = selectedDay, !day.sessions.isEmpty {
-                    DaySummaryView(day: day)
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                        .transition(
-                            .asymmetric(
-                                insertion: .move(edge: .top)
-                                    .combined(with: .opacity),
-                                removal: .move(edge: .top)
-                                    .combined(with: .opacity)
-                            )
-                        )
-
-                    SessionListView(workoutDay: day) { newSession in
-                        scheduleNavigation(to: newSession)
-                    }
-                    .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .bottom)
-                                .combined(with: .opacity),
-                            removal: .move(edge: .bottom)
-                                .combined(with: .opacity)
-                        )
-                    )
+                    dayContentSection(for: day)
                 } else {
                     emptyWorkoutSection
                         .transition(
@@ -134,6 +103,69 @@ struct DayPickerView: View {
             }
         }
     }
+
+    // MARK: - Date Picker
+
+    @ViewBuilder
+    private var datePickerContent: some View {
+        Button {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                datePickerExpanded.toggle()
+            }
+        } label: {
+            HStack {
+                Text(selectedDate, style: .date)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(datePickerExpanded ? 180 : 0))
+            }
+        }
+
+        if datePickerExpanded {
+            DatePicker(
+                "Select Day",
+                selection: $selectedDate,
+                in: ...Date(),
+                displayedComponents: .date
+            )
+            .datePickerStyle(.graphical)
+            .onChange(of: selectedDate) { _, newValue in
+                selectedDate = Calendar.current.startOfDay(for: newValue)
+            }
+            .transition(.opacity.combined(with: .move(edge: .top)))
+        }
+    }
+
+    // MARK: - Day Content (populated)
+
+    @ViewBuilder
+    private func dayContentSection(for day: WorkoutDay) -> some View {
+        DaySummaryView(day: day)
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .transition(
+                .asymmetric(
+                    insertion: .move(edge: .top).combined(with: .opacity),
+                    removal: .move(edge: .top).combined(with: .opacity)
+                )
+            )
+
+        SessionListView(workoutDay: day) { newSession in
+            scheduleNavigation(to: newSession)
+        }
+        .transition(
+            .asymmetric(
+                insertion: .move(edge: .bottom).combined(with: .opacity),
+                removal: .move(edge: .bottom).combined(with: .opacity)
+            )
+        )
+    }
+
+    // MARK: - Empty State
 
     private var emptyWorkoutSection: some View {
         Section {

@@ -50,13 +50,13 @@ struct DayPickerView: View {
                     DatePicker(
                         "Select Day",
                         selection: $selectedDate,
+                        in: ...Date(),
                         displayedComponents: .date
                     )
                     .datePickerStyle(.graphical)
-                    .onChange(of: selectedDate) { _, newDate in
-                        selectedDate = Calendar.current.startOfDay(
-                            for: newDate
-                        )
+                    .padding(.horizontal)
+                    .onChange(of: selectedDate) { _, newValue in
+                        selectedDate = Calendar.current.startOfDay(for: newValue)
                     }
                 }
 
@@ -171,20 +171,19 @@ struct DayPickerView: View {
         )
     }
 
-
     private func startNewSession() {
+        guard selectedDate <= Calendar.current.startOfDay(for: Date()) else { return }
+        
         let day: WorkoutDay
-
-        if let existingDay = selectedDay {
-            day = existingDay
+        if let existing = selectedDay {
+            day = existing
         } else {
             day = WorkoutDay(date: selectedDate)
             modelContext.insert(day)
         }
-
+        
         let session = WorkoutSession(startTime: Date())
         day.sessions.append(session)
-
         saveChanges()
     }
 

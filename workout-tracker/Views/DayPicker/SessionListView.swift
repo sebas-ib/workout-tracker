@@ -118,6 +118,8 @@ struct SessionListView: View {
     }
 
     private func addSession() {
+        guard workoutDay.date <= Calendar.current.startOfDay(for: Date()) else { return }
+        
         let session = WorkoutSession(startTime: Date())
         workoutDay.sessions.append(session)
 

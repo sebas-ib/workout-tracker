@@ -7,14 +7,27 @@
 import Foundation
 import SwiftData
 
-// The reusable exercise library — preset + user-added
 @Model
 class Exercise {
     var name: String
-    var isCustom: Bool // true if user-added, false if from your preset list
+    var isCustom: Bool
+    var muscleGroupRawValue: String          // primary — counts toward volume
+    var secondaryMuscleGroupRawValue: String?  // optional — display/reference only
     
-    init(name: String, isCustom: Bool = false) {
+    var muscleGroup: MuscleGroup {
+        get { MuscleGroup(rawValue: muscleGroupRawValue) ?? .other }
+        set { muscleGroupRawValue = newValue.rawValue }
+    }
+    
+    var secondaryMuscleGroup: MuscleGroup? {
+        get { secondaryMuscleGroupRawValue.flatMap { MuscleGroup(rawValue: $0) } }
+        set { secondaryMuscleGroupRawValue = newValue?.rawValue }
+    }
+    
+    init(name: String, isCustom: Bool = false, muscleGroup: MuscleGroup = .other, secondaryMuscleGroup: MuscleGroup? = nil) {
         self.name = name
         self.isCustom = isCustom
+        self.muscleGroupRawValue = muscleGroup.rawValue
+        self.secondaryMuscleGroupRawValue = secondaryMuscleGroup?.rawValue
     }
 }

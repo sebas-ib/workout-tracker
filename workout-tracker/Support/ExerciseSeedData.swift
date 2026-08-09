@@ -1,58 +1,48 @@
-//
-//  ExerciseSeedData.swift
-//  workout-tracker
-//
-//  Created by Sebastian Ibarra-Perez on 8/9/26.
-//
 import Foundation
 import SwiftData
 
 enum ExerciseSeedData {
-    static let starterExercises: [String] = [
+    static let starterExercises: [(name: String, primary: MuscleGroup, secondary: MuscleGroup?)] = [
         // Chest
-        "Bench Press",
-        "Incline Bench Press",
-        "Dumbbell Press",
-        "Push-Up",
-        "Chest Fly",
+        ("Bench Press", .chest, .arms),
+        ("Incline Bench Press", .chest, .shoulders),
+        ("Dumbbell Press", .chest, .arms),
+        ("Push-Up", .chest, .arms),
+        ("Chest Fly", .chest, nil),
 
         // Back
-        "Deadlift",
-        "Pull-Up",
-        "Lat Pulldown",
-        "Bent-Over Row",
-        "Seated Cable Row",
+        ("Deadlift", .back, .legs),
+        ("Pull-Up", .back, .arms),
+        ("Lat Pulldown", .back, .arms),
+        ("Bent-Over Row", .back, .arms),
+        ("Seated Cable Row", .back, .arms),
 
         // Legs
-        "Squat",
-        "Leg Press",
-        "Hack Squat",
-        "Leg Curl",
-        "Leg Extension",
-        "Calf Raise",
+        ("Squat", .legs, .core),
+        ("Leg Press", .legs, nil),
+        ("Lunges", .legs, nil),
+        ("Leg Curl", .legs, nil),
+        ("Leg Extension", .legs, nil),
+        ("Calf Raise", .legs, nil),
 
         // Shoulders
-        "Overhead Press",
-        "Lateral Raise",
-        "Lateral Raise Machine",
-        "Front Raise",
-        "Face Pull",
+        ("Overhead Press", .shoulders, .arms),
+        ("Lateral Raise", .shoulders, nil),
+        ("Front Raise", .shoulders, nil),
+        ("Face Pull", .shoulders, .back),
 
         // Arms
-        "Bicep Curl",
-        "Hammer Curl",
-        "Bicep Curl Machine",
-        "Tricep Pushdown",
-        "Overhead Tricep Extension",
-        "Tricep Dip",
-        "Skull Crusher",
+        ("Bicep Curl", .arms, nil),
+        ("Hammer Curl", .arms, nil),
+        ("Tricep Pushdown", .arms, nil),
+        ("Tricep Dip", .arms, .chest),
+        ("Skull Crusher", .arms, nil),
 
         // Core
-        "Plank",
-        "Crunch",
-        "Russian Twist",
-        "Hanging Leg Raise",
-        "Abdominal Crunch Machine"
+        ("Plank", .core, nil),
+        ("Crunch", .core, nil),
+        ("Russian Twist", .core, nil),
+        ("Hanging Leg Raise", .core, nil)
     ]
 }
 
@@ -62,13 +52,43 @@ extension ExerciseSeedData {
         let descriptor = FetchDescriptor<Exercise>()
         let existingCount = (try? context.fetchCount(descriptor)) ?? 0
         
-        guard existingCount == 0 else { return } // already seeded, skip
+        guard existingCount == 0 else {
+            migrateUntaggedExercisesIfNeeded(context: context)
+            return
+        }
         
-        for name in starterExercises {
-            let exercise = Exercise(name: name, isCustom: false)
+        for entry in starterExercises {
+            let exercise = Exercise(
+                name: entry.name,
+                isCustom: false,
+                muscleGroup: entry.primary,
+                secondaryMuscleGroup: entry.secondary
+            )
             context.insert(exercise)
         }
         
         try? context.save()
     }
+    
+    @MainActor
+    static func migrateUntaggedExercisesIfNeeded(context: ModelContext) {
+        let descriptor = FetchDescriptor<Exercise>()
+        guard let allExercises = try? context.fetch(descriptor) else { return }
+        
+        let nameToEntry = Dictionary(uniqueKeysWithValues: starterExercises.map { ($0.name, $0) })
+        var didUpdate = false
+        
+        for exercise in allExercises {
+            if exercise.muscleGroupRawValue.isEmpty, let match = nameToEntry[exercise.name] {
+                exercise.muscleGroup = match.primary
+                exercise.secondaryMuscleGroup = match.secondary
+                didUpdate = true
+            }
+        }
+        
+        if didUpdate {
+            try? context.save()
+        }
+    }
 }
+

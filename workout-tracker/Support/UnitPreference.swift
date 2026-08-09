@@ -29,6 +29,7 @@ enum WeightUnit: String, CaseIterable {
 
 final class UnitSettings: ObservableObject {
     @AppStorage("weightUnit") var unitRawValue: String = WeightUnit.lbs.rawValue
+    @AppStorage("consistencyWeeksToShow") var consistencyWeeksToShow: Int = 12
     
     var unit: WeightUnit {
         get { WeightUnit(rawValue: unitRawValue) ?? .lbs }

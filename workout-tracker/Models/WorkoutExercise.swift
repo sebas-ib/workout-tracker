@@ -10,10 +10,12 @@ import SwiftData
 // A logged exercise instance within a session, linked to the library
 @Model
 class WorkoutExercise {
-    var exercise: Exercise // reference to the library entry
+    var loggedAt: Date
+    var exercise: Exercise
     @Relationship(deleteRule: .cascade) var sets: [ExerciseSet]
     
     init(exercise: Exercise) {
+        self.loggedAt = Date()
         self.exercise = exercise
         self.sets = []
     }

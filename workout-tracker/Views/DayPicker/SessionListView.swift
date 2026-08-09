@@ -14,6 +14,7 @@ struct SessionListView: View {
     let workoutDay: WorkoutDay
 
     @State private var sessionPendingDeletion: WorkoutSession?
+    @State private var showingNewSessionSheet = false
     @State private var saveError: Error?
 
     private var sortedSessions: [WorkoutSession] {
@@ -52,10 +53,18 @@ struct SessionListView: View {
             }
 
             Button {
-                addSession()
+                showingNewSessionSheet = true
             } label: {
                 Label("Add Another Session", systemImage: "plus")
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .buttonStyle(.bordered)
+            .padding(.horizontal)
+            .sheet(isPresented: $showingNewSessionSheet) {
+                NewSessionView { newSession in
+                    workoutDay.sessions.append(newSession)
+                    saveChanges()
+                }
             }
         } header: {
             Text("Sessions")

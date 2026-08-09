@@ -12,9 +12,28 @@ struct ExerciseSetsView: View {
     @Bindable var workoutExercise: WorkoutExercise
     var focusedField: FocusState<SetField?>.Binding
     
+    @Query(sort: \WorkoutExercise.loggedAt, order: .reverse) private var allWorkoutExercises: [WorkoutExercise]
+    
+    // Most recent OTHER instance of this same exercise, logged before this one
+    private var previousWorkoutExercise: WorkoutExercise? {
+        allWorkoutExercises.first {
+            $0.exercise.persistentModelID == workoutExercise.exercise.persistentModelID &&
+            $0.persistentModelID != workoutExercise.persistentModelID &&
+            $0.loggedAt < workoutExercise.loggedAt
+        }
+    }
+    
+    private func previousSet(forOrder order: Int) -> ExerciseSet? {
+        previousWorkoutExercise?.sets.first { $0.order == order }
+    }
+    
     var body: some View {
         ForEach(workoutExercise.sets.sorted(by: { $0.order < $1.order })) { set in
-            SetRowView(set: set, focusedField: focusedField)
+            SetRowView(
+                set: set,
+                focusedField: focusedField,
+                previousSet: previousSet(forOrder: set.order)
+            )
         }
         .onDelete(perform: deleteSets)
         

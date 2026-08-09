@@ -19,6 +19,7 @@ struct DayPickerView: View {
     )
 
     @State private var saveError: Error?
+    @State private var showingNewSessionSheet = false
 
     private var selectedDay: WorkoutDay? {
         workoutDays.first {
@@ -106,6 +107,11 @@ struct DayPickerView: View {
                     .accessibilityLabel("Settings")
                 }
             }
+            .sheet(isPresented: $showingNewSessionSheet) {
+                NewSessionView { newSession in
+                    attachNewSession(newSession)
+                }
+            }
             .alert(
                 "Couldn't Save Workout",
                 isPresented: saveErrorBinding
@@ -134,9 +140,7 @@ struct DayPickerView: View {
                 )
 
                 Button {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.8)) {
-                        startNewSession()
-                    }
+                    showingNewSessionSheet = true
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
@@ -170,10 +174,8 @@ struct DayPickerView: View {
             }
         )
     }
-
-    private func startNewSession() {
-        guard selectedDate <= Calendar.current.startOfDay(for: Date()) else { return }
-        
+    
+    private func attachNewSession(_ session: WorkoutSession) {
         let day: WorkoutDay
         if let existing = selectedDay {
             day = existing
@@ -181,8 +183,6 @@ struct DayPickerView: View {
             day = WorkoutDay(date: selectedDate)
             modelContext.insert(day)
         }
-        
-        let session = WorkoutSession(startTime: Date())
         day.sessions.append(session)
         saveChanges()
     }

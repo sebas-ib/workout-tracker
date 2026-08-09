@@ -13,6 +13,8 @@ struct SessionDetailView: View {
     
     @State private var showingExercisePicker = false
     @State private var exercisePendingDeletion: WorkoutExercise?
+    @State private var showingRenameAlert = false
+    @State private var renameText = ""
     @FocusState private var focusedField: SetField?
     
     var body: some View {
@@ -71,10 +73,30 @@ struct SessionDetailView: View {
         .navigationTitle(session.name ?? "Session")
         .navigationBarTitleDisplayMode(.inline)
         .scrollDismissesKeyboard(.immediately)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    renameText = session.name ?? ""
+                    showingRenameAlert = true
+                } label: {
+                    Image(systemName: "pencil")
+                }
+            }
+        }
         .sheet(isPresented: $showingExercisePicker) {
             ExercisePickerView { selectedExercise in
                 addExercise(selectedExercise)
             }
+        }
+        .alert("Rename Session", isPresented: $showingRenameAlert) {
+            TextField("Session Name", text: $renameText)
+            Button("Cancel", role: .cancel) { }
+            Button("Save") {
+                session.name = renameText.trimmingCharacters(in: .whitespaces).isEmpty ? nil : renameText
+                try? modelContext.save()
+            }
+        } message: {
+            Text("Give this session a name, like 'Push Day' or 'Leg Day.'")
         }
         .alert(
             "Delete \(exercisePendingDeletion?.exercise.name ?? "Exercise")?",
@@ -99,13 +121,12 @@ struct SessionDetailView: View {
             TapGesture().onEnded {
                 focusedField = nil
             },
-            including: focusedField != nil ? .all : .none // Only active when keyboard is open
+            including: focusedField != nil ? .all : .none
         )
     }
         
     private func addExercise(_ exercise: Exercise) {
         let workoutExercise = WorkoutExercise(exercise: exercise)
-        
         session.exercises.append(workoutExercise)
         
         do {

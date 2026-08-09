@@ -19,5 +19,17 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    let schema = Schema([
+        WorkoutDay.self,
+        WorkoutSession.self,
+        WorkoutExercise.self,
+        ExerciseSet.self,
+        Exercise.self
+    ])
+    let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let container = try! ModelContainer(for: schema, configurations: [config])
+    
+    return ContentView()
+        .modelContainer(container)
+        .environmentObject(UnitSettings())
 }

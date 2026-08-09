@@ -16,60 +16,93 @@ struct SessionDetailView: View {
     
     var body: some View {
         List {
+            // 1. Header Section
             Section {
                 SessionSummaryView(session: session)
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             }
             
-            ForEach(session.exercises) { workoutExercise in
+            // 2. Dynamic Exercises List with Empty State Placeholder
+            if session.exercises.isEmpty {
                 Section {
-                    ExerciseSetsView(workoutExercise: workoutExercise, focusedField: $focusedField)
-                } header: {
-                    Text(workoutExercise.exercise.name)
+                    ContentUnavailableView(
+                        "No Exercises",
+                        systemImage: "dumbbell.fill",
+                        description: Text("Tap 'Add Exercise' below to start tracking your movements.")
+                    )
+                    .listRowBackground(Color.clear)
                 }
+            } else {
+                ForEach(session.exercises) { workoutExercise in
+                    Section {
+                        ExerciseSetsView(workoutExercise: workoutExercise, focusedField: $focusedField)
+                    } header: {
+                        Text(workoutExercise.exercise.name)
+                            .font(.headline)
+                            .textCase(nil)
+                    }
+                }
+                .onDelete(perform: deleteExercises)
             }
-            .onDelete(perform: deleteExercises)
             
+            // 3. Interactive Footer Section
             Section {
                 Button {
                     showingExercisePicker = true
                 } label: {
                     Label("Add Exercise", systemImage: "plus.circle.fill")
+                        .font(.body.bold())
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
+            } footer: {
+                Spacer()
+                    .frame(height: 60)
+                    .listRowBackground(Color.clear)
             }
         }
         .navigationTitle(session.name ?? "Session")
-        .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Button {
-                    focusedField = nil
-                } label: {
-                    Text("Done")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-            }
-        }
+        .navigationBarTitleDisplayMode(.inline)
+        .scrollDismissesKeyboard(.immediately)
         .sheet(isPresented: $showingExercisePicker) {
             ExercisePickerView { selectedExercise in
                 addExercise(selectedExercise)
             }
         }
+        .highPriorityGesture(
+            TapGesture().onEnded {
+                focusedField = nil
+            },
+            including: focusedField != nil ? .all : .none // Only active when keyboard is open
+        )
     }
-    
+        
     private func addExercise(_ exercise: Exercise) {
+        // Explicit Context Injection
         let workoutExercise = WorkoutExercise(exercise: exercise)
+        
         session.exercises.append(workoutExercise)
-        try? modelContext.save()
+        
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to save newly added exercise: \(error.localizedDescription)")
+        }
     }
     
     private func deleteExercises(at offsets: IndexSet) {
         for index in offsets {
-            modelContext.delete(session.exercises[index])
+            let exerciseToDelete = session.exercises[index]
+            modelContext.delete(exerciseToDelete)
         }
-        try? modelContext.save()
+        
+        // Remove from the bound relationship array to instantly update the list binding UI
+        session.exercises.remove(atOffsets: offsets)
+        
+        do {
+            try modelContext.save()
+        } catch {
+            print("Failed to save deletion context updates: \(error.localizedDescription)")
+        }
     }
 }

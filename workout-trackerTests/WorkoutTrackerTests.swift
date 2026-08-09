@@ -282,3 +282,97 @@ struct ExerciseLibraryTests {
         #expect(names.count == uniqueNames.count)
     }
 }
+
+// MARK: - Workout Calculations Tests
+
+@Suite("Workout Calculations")
+struct WorkoutCalculationsTests {
+
+    @Test @MainActor func volumeCalculatesCorrectlyForSingleExercise() throws {
+        let exercise = Exercise(name: "Bench Press")
+        let workoutExercise = WorkoutExercise(exercise: exercise)
+        workoutExercise.sets.append(ExerciseSet(reps: 10, weight: 100, order: 1)) // 1000
+        workoutExercise.sets.append(ExerciseSet(reps: 8, weight: 105, order: 2))  // 840
+
+        let volume = WorkoutCalculations.volume(for: workoutExercise)
+        #expect(volume == 1840)
+    }
+
+    @Test @MainActor func totalVolumeSumsAcrossExercises() throws {
+        let session = WorkoutSession(startTime: Date())
+        
+        let bench = WorkoutExercise(exercise: Exercise(name: "Bench"))
+        bench.sets.append(ExerciseSet(reps: 10, weight: 100, order: 1)) // 1000
+        
+        let squat = WorkoutExercise(exercise: Exercise(name: "Squat"))
+        squat.sets.append(ExerciseSet(reps: 5, weight: 200, order: 1)) // 1000
+        
+        session.exercises = [bench, squat]
+
+        #expect(WorkoutCalculations.totalVolume(for: session) == 2000)
+    }
+
+    @Test @MainActor func totalSetsCountsAcrossExercises() throws {
+        let session = WorkoutSession(startTime: Date())
+        
+        let bench = WorkoutExercise(exercise: Exercise(name: "Bench"))
+        bench.sets = [
+            ExerciseSet(reps: 10, weight: 100, order: 1),
+            ExerciseSet(reps: 8, weight: 105, order: 2)
+        ]
+        session.exercises = [bench]
+
+        #expect(WorkoutCalculations.totalSets(for: session) == 2)
+    }
+
+    @Test @MainActor func totalRepsSumsAcrossSets() throws {
+        let session = WorkoutSession(startTime: Date())
+        let bench = WorkoutExercise(exercise: Exercise(name: "Bench"))
+        bench.sets = [
+            ExerciseSet(reps: 10, weight: 100, order: 1),
+            ExerciseSet(reps: 8, weight: 105, order: 2)
+        ]
+        session.exercises = [bench]
+
+        #expect(WorkoutCalculations.totalReps(for: session) == 18)
+    }
+
+    @Test @MainActor func dayLevelTotalsAggregateAcrossSessions() throws {
+        let day = WorkoutDay(date: Date())
+        
+        let morning = WorkoutSession(startTime: Date())
+        let benchMorning = WorkoutExercise(exercise: Exercise(name: "Bench"))
+        benchMorning.sets.append(ExerciseSet(reps: 10, weight: 100, order: 1)) // 1000
+        morning.exercises = [benchMorning]
+        
+        let evening = WorkoutSession(startTime: Date())
+        let squatEvening = WorkoutExercise(exercise: Exercise(name: "Squat"))
+        squatEvening.sets.append(ExerciseSet(reps: 5, weight: 200, order: 1)) // 1000
+        evening.exercises = [squatEvening]
+        
+        day.sessions = [morning, evening]
+
+        #expect(WorkoutCalculations.totalVolume(for: day) == 2000)
+        #expect(WorkoutCalculations.totalSets(for: day) == 2)
+    }
+
+    @Test @MainActor func emptySessionHasZeroTotals() throws {
+        let session = WorkoutSession(startTime: Date())
+        
+        #expect(WorkoutCalculations.totalVolume(for: session) == 0)
+        #expect(WorkoutCalculations.totalSets(for: session) == 0)
+        #expect(WorkoutCalculations.totalReps(for: session) == 0)
+    }
+
+    @Test @MainActor func maxWeightFindsHeaviestSetAcrossExercises() throws {
+        let session = WorkoutSession(startTime: Date())
+        let bench = WorkoutExercise(exercise: Exercise(name: "Bench"))
+        bench.sets = [
+            ExerciseSet(reps: 10, weight: 100, order: 1),
+            ExerciseSet(reps: 5, weight: 135, order: 2)
+        ]
+        session.exercises = [bench]
+
+        #expect(WorkoutCalculations.maxWeight(for: session) == 135)
+    }
+}

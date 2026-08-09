@@ -7,12 +7,17 @@
 import SwiftUI
 import SwiftData
 
+enum SetField: Hashable {
+    case reps(PersistentIdentifier)
+    case weight(PersistentIdentifier)
+}
+
 struct SetRowView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var unitSettings: UnitSettings
     @Bindable var set: ExerciseSet
+    var focusedField: FocusState<SetField?>.Binding
     
-    // Weight is always stored in lbs on the model; this bridges display <-> storage
     private var displayWeight: Binding<Double> {
         Binding(
             get: { unitSettings.unit.convert(fromLbs: set.weight) },
@@ -33,6 +38,7 @@ struct SetRowView: View {
                 .keyboardType(.numberPad)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 60)
+                .focused(focusedField, equals: .reps(set.persistentModelID))
             
             Text("reps ×")
                 .foregroundStyle(.secondary)
@@ -41,6 +47,7 @@ struct SetRowView: View {
                 .keyboardType(.decimalPad)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 70)
+                .focused(focusedField, equals: .weight(set.persistentModelID))
             
             Text(unitSettings.unit.rawValue)
                 .foregroundStyle(.secondary)

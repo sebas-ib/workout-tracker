@@ -12,26 +12,45 @@ struct SessionDetailView: View {
     @Bindable var session: WorkoutSession
     
     @State private var showingExercisePicker = false
+    @FocusState private var focusedField: SetField?
     
     var body: some View {
         List {
+            Section {
+                SessionSummaryView(session: session)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+            
             ForEach(session.exercises) { workoutExercise in
                 Section {
-                    ExerciseSetsView(workoutExercise: workoutExercise)
+                    ExerciseSetsView(workoutExercise: workoutExercise, focusedField: $focusedField)
                 } header: {
                     Text(workoutExercise.exercise.name)
                 }
             }
             .onDelete(perform: deleteExercises)
-        }
-        .navigationTitle(session.name ?? "Session")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            
+            Section {
                 Button {
                     showingExercisePicker = true
                 } label: {
-                    Label("Add Exercise", systemImage: "plus")
+                    Label("Add Exercise", systemImage: "plus.circle.fill")
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
+            }
+        }
+        .navigationTitle(session.name ?? "Session")
+        .scrollDismissesKeyboard(.interactively)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Button {
+                    focusedField = nil
+                } label: {
+                    Text("Done")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
             }
         }
         .sheet(isPresented: $showingExercisePicker) {

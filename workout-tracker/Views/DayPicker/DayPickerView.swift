@@ -29,7 +29,7 @@ struct DayPickerView: View {
                 
                 Divider()
                 
-                if let day = existingDay(for: selectedDate) {
+                if let day = existingDay(for: selectedDate), !day.sessions.isEmpty {
                     SessionListView(workoutDay: day)
                 } else {
                     ContentUnavailableView(

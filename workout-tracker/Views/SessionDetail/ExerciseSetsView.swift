@@ -10,10 +10,11 @@ import SwiftData
 struct ExerciseSetsView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var workoutExercise: WorkoutExercise
+    var focusedField: FocusState<SetField?>.Binding
     
     var body: some View {
         ForEach(workoutExercise.sets.sorted(by: { $0.order < $1.order })) { set in
-            SetRowView(set: set)
+            SetRowView(set: set, focusedField: focusedField)
         }
         .onDelete(perform: deleteSets)
         

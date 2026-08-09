@@ -13,6 +13,12 @@ struct SessionListView: View {
     
     var body: some View {
         List {
+            Section {
+                DaySummaryView(day: workoutDay)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+            
             ForEach(workoutDay.sessions.sorted(by: { $0.startTime < $1.startTime })) { session in
                 NavigationLink {
                     SessionDetailView(session: session)

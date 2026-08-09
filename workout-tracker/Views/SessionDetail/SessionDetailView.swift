@@ -12,6 +12,7 @@ struct SessionDetailView: View {
     @Bindable var session: WorkoutSession
     
     @State private var showingExercisePicker = false
+    @State private var exercisePendingDeletion: WorkoutExercise?
     @FocusState private var focusedField: SetField?
     
     var body: some View {
@@ -36,12 +37,21 @@ struct SessionDetailView: View {
                     Section {
                         ExerciseSetsView(workoutExercise: workoutExercise, focusedField: $focusedField)
                     } header: {
-                        Text(workoutExercise.exercise.name)
-                            .font(.headline)
-                            .textCase(nil)
+                        HStack {
+                            Text(workoutExercise.exercise.name)
+                                .font(.headline)
+                                .textCase(nil)
+                            Spacer()
+                            Button(role: .destructive) {
+                                exercisePendingDeletion = workoutExercise
+                            } label: {
+                                Image(systemName: "trash")
+                                    .font(.caption)
+                            }
+                            .buttonStyle(.borderless)
+                        }
                     }
                 }
-                .onDelete(perform: deleteExercises)
             }
             
             Section {
@@ -66,6 +76,25 @@ struct SessionDetailView: View {
                 addExercise(selectedExercise)
             }
         }
+        .alert(
+            "Delete \(exercisePendingDeletion?.exercise.name ?? "Exercise")?",
+            isPresented: Binding(
+                get: { exercisePendingDeletion != nil },
+                set: { if !$0 { exercisePendingDeletion = nil } }
+            )
+        ) {
+            Button("Cancel", role: .cancel) {
+                exercisePendingDeletion = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let exercise = exercisePendingDeletion {
+                    deleteExercise(exercise)
+                }
+                exercisePendingDeletion = nil
+            }
+        } message: {
+            Text("This will permanently remove this exercise and all of its logged sets from this session.")
+        }
         .highPriorityGesture(
             TapGesture().onEnded {
                 focusedField = nil
@@ -86,12 +115,9 @@ struct SessionDetailView: View {
         }
     }
     
-    private func deleteExercises(at offsets: IndexSet) {
-        for index in offsets {
-            let exerciseToDelete = session.exercises[index]
-            modelContext.delete(exerciseToDelete)
-        }
-        session.exercises.remove(atOffsets: offsets)
+    private func deleteExercise(_ workoutExercise: WorkoutExercise) {
+        session.exercises.removeAll { $0.persistentModelID == workoutExercise.persistentModelID }
+        modelContext.delete(workoutExercise)
         
         do {
             try modelContext.save()

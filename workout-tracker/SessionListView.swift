@@ -4,8 +4,6 @@
 //
 //  Created by Sebastian Ibarra-Perez on 8/9/26.
 //
-
-
 import SwiftUI
 import SwiftData
 
@@ -17,7 +15,7 @@ struct SessionListView: View {
         List {
             ForEach(workoutDay.sessions.sorted(by: { $0.startTime < $1.startTime })) { session in
                 NavigationLink {
-                    Text("Session detail goes here") // placeholder for next step
+                    SessionDetailView(session: session)
                 } label: {
                     VStack(alignment: .leading) {
                         Text(session.name ?? "Session")

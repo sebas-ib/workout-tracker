@@ -4,12 +4,13 @@
 //
 //  Created by Sebastian Ibarra-Perez on 8/9/26.
 //
-
 import SwiftUI
 import SwiftData
 
 @main
 struct workout_trackerApp: App {
+    @StateObject private var unitSettings = UnitSettings()
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             WorkoutDay.self,
@@ -32,5 +33,6 @@ struct workout_trackerApp: App {
             ContentView()
         }
         .modelContainer(sharedModelContainer)
+        .environmentObject(unitSettings)
     }
 }

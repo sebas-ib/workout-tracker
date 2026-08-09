@@ -4,8 +4,6 @@
 //
 //  Created by Sebastian Ibarra-Perez on 8/9/26.
 //
-
-
 import Foundation
 import SwiftData
 

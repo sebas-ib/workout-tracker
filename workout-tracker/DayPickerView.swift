@@ -4,8 +4,6 @@
 //
 //  Created by Sebastian Ibarra-Perez on 8/9/26.
 //
-
-
 import SwiftUI
 import SwiftData
 
@@ -50,6 +48,15 @@ struct DayPickerView: View {
                 }
             }
             .navigationTitle("Workout Tracker")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
+            }
         }
     }
     

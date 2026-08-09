@@ -56,4 +56,19 @@ enum WorkoutCalculations {
             .map { $0.weight }
             .max() ?? 0
     }
+
+    /// Returns a dictionary mapping each calendar day (start-of-day) to a simple
+    /// "intensity" score (based on total sets logged that day) for consistency tracking.
+    static func activityByDay(from workoutDays: [WorkoutDay]) -> [Date: Int] {
+        var result: [Date: Int] = [:]
+        let calendar = Calendar.current
+        
+        for day in workoutDays {
+            let key = calendar.startOfDay(for: day.date)
+            let sets = totalSets(for: day)
+            result[key, default: 0] += sets
+        }
+        
+        return result
+    }
 }

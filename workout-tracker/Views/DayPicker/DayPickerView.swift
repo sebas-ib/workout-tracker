@@ -16,6 +16,9 @@ struct DayPickerView: View {
     var body: some View {
         NavigationStack {
             VStack {
+                ConsistencyGraphView()
+                    .padding(.horizontal)
+                
                 DatePicker(
                     "Select Day",
                     selection: $selectedDate,

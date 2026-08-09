@@ -16,14 +16,12 @@ struct SessionDetailView: View {
     
     var body: some View {
         List {
-            // 1. Header Section
             Section {
                 SessionSummaryView(session: session)
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             }
             
-            // 2. Dynamic Exercises List with Empty State Placeholder
             if session.exercises.isEmpty {
                 Section {
                     ContentUnavailableView(
@@ -46,7 +44,6 @@ struct SessionDetailView: View {
                 .onDelete(perform: deleteExercises)
             }
             
-            // 3. Interactive Footer Section
             Section {
                 Button {
                     showingExercisePicker = true
@@ -78,7 +75,6 @@ struct SessionDetailView: View {
     }
         
     private func addExercise(_ exercise: Exercise) {
-        // Explicit Context Injection
         let workoutExercise = WorkoutExercise(exercise: exercise)
         
         session.exercises.append(workoutExercise)
@@ -95,8 +91,6 @@ struct SessionDetailView: View {
             let exerciseToDelete = session.exercises[index]
             modelContext.delete(exerciseToDelete)
         }
-        
-        // Remove from the bound relationship array to instantly update the list binding UI
         session.exercises.remove(atOffsets: offsets)
         
         do {

@@ -14,7 +14,6 @@ struct ExerciseSetsView: View {
     
     @Query(sort: \WorkoutExercise.loggedAt, order: .reverse) private var allWorkoutExercises: [WorkoutExercise]
     
-    // Most recent OTHER instance of this same exercise, logged before this one
     private var previousWorkoutExercise: WorkoutExercise? {
         allWorkoutExercises.first {
             $0.exercise.persistentModelID == workoutExercise.exercise.persistentModelID &&
@@ -24,7 +23,8 @@ struct ExerciseSetsView: View {
     }
     
     private func previousSet(forOrder order: Int) -> ExerciseSet? {
-        previousWorkoutExercise?.sets.first { $0.order == order }
+        previousWorkoutExercise?.sets.sorted(by: { $0.order < $1.order })
+            .first { $0.order == order }
     }
     
     var body: some View {
@@ -57,6 +57,21 @@ struct ExerciseSetsView: View {
         for index in offsets {
             modelContext.delete(sorted[index])
         }
+        workoutExercise.sets.removeAll { deletedSet in
+            offsets.contains { sorted[$0].persistentModelID == deletedSet.persistentModelID }
+        }
+        
+        renumberSets()
+        
         try? modelContext.save()
+    }
+    
+    /// Re-assigns order values 1, 2, 3... sequentially based on current position,
+    /// so deleting set 4 out of 5 shifts what was set 5 down to become set 4.
+    private func renumberSets() {
+        let sorted = workoutExercise.sets.sorted(by: { $0.order < $1.order })
+        for (index, set) in sorted.enumerated() {
+            set.order = index + 1
+        }
     }
 }

@@ -20,6 +20,7 @@ struct DayPickerView: View {
 
     @State private var saveError: Error?
     @State private var showingNewSessionSheet = false
+    @State private var newlyCreatedSession: WorkoutSession?
 
     private var selectedDay: WorkoutDay? {
         workoutDays.first {
@@ -74,15 +75,17 @@ struct DayPickerView: View {
                             )
                         )
 
-                    SessionListView(workoutDay: day)
-                        .transition(
-                            .asymmetric(
-                                insertion: .move(edge: .bottom)
-                                    .combined(with: .opacity),
-                                removal: .move(edge: .bottom)
-                                    .combined(with: .opacity)
-                            )
+                    SessionListView(workoutDay: day) { newSession in
+                        scheduleNavigation(to: newSession)
+                    }
+                    .transition(
+                        .asymmetric(
+                            insertion: .move(edge: .bottom)
+                                .combined(with: .opacity),
+                            removal: .move(edge: .bottom)
+                                .combined(with: .opacity)
                         )
+                    )
                 } else {
                     emptyWorkoutSection
                         .transition(
@@ -110,7 +113,11 @@ struct DayPickerView: View {
             .sheet(isPresented: $showingNewSessionSheet) {
                 NewSessionView { newSession in
                     attachNewSession(newSession)
+                    scheduleNavigation(to: newSession)
                 }
+            }
+            .navigationDestination(item: $newlyCreatedSession) { session in
+                SessionDetailView(session: session)
             }
             .alert(
                 "Couldn't Save Workout",
@@ -192,6 +199,14 @@ struct DayPickerView: View {
             try modelContext.save()
         } catch {
             saveError = error
+        }
+    }
+    
+    private func scheduleNavigation(to session: WorkoutSession) {
+        // Let the sheet's dismiss animation finish before pushing into the new session,
+        // so the two transitions read as sequential rather than simultaneous.
+        DispatchQueue.main.asyncAfter(deadline: .now()) {
+            newlyCreatedSession = session
         }
     }
 }

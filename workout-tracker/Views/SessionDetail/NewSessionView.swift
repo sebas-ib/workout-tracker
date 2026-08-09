@@ -17,7 +17,6 @@ struct NewSessionView: View {
 
     let onCreate: (WorkoutSession) -> Void
 
-    // Only show past sessions that actually have exercises, so the template list is useful
     private var pastSessions: [WorkoutSession] {
         allSessions.filter { !$0.exercises.isEmpty }
     }
@@ -33,7 +32,7 @@ struct NewSessionView: View {
                     Button {
                         createBlankSession()
                     } label: {
-                        Label("Start Blank Session", systemImage: "plus.circle.fill")
+                        Label("Start Session", systemImage: "plus.circle.fill")
                     }
                 }
 
@@ -47,7 +46,7 @@ struct NewSessionView: View {
                                     Text(session.name ?? "Session")
                                         .font(.headline)
                                         .foregroundStyle(.primary)
-                                    Text(session.startTime, style: .date)
+                                    Text(session.startTime, format: .dateTime.month().day().year().hour().minute())
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Text(session.exercises.map { $0.exercise.name }.joined(separator: ", "))
@@ -86,8 +85,6 @@ struct NewSessionView: View {
             let sortedTemplateSets = templateExercise.sets.sorted(by: { $0.order < $1.order })
 
             for templateSet in sortedTemplateSets {
-                // Leave reps/weight blank — the "last time" numbers show automatically
-                // as ghost hints once this exercise renders (see ExerciseSetsView changes below)
                 newWorkoutExercise.sets.append(ExerciseSet(reps: 0, weight: 0, order: templateSet.order))
             }
 

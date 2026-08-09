@@ -4,7 +4,6 @@
 //
 //  Created by Sebastian Ibarra-Perez on 8/9/26.
 //
-
 import SwiftUI
 import SwiftData
 
@@ -12,6 +11,7 @@ struct SessionListView: View {
     @Environment(\.modelContext) private var modelContext
 
     let workoutDay: WorkoutDay
+    let onSessionCreated: (WorkoutSession) -> Void
 
     @State private var sessionPendingDeletion: WorkoutSession?
     @State private var showingNewSessionSheet = false
@@ -64,6 +64,7 @@ struct SessionListView: View {
                 NewSessionView { newSession in
                     workoutDay.sessions.append(newSession)
                     saveChanges()
+                    onSessionCreated(newSession)
                 }
             }
         } header: {
@@ -124,15 +125,6 @@ struct SessionListView: View {
                 }
             }
         )
-    }
-
-    private func addSession() {
-        guard workoutDay.date <= Calendar.current.startOfDay(for: Date()) else { return }
-        
-        let session = WorkoutSession(startTime: Date())
-        workoutDay.sessions.append(session)
-
-        saveChanges()
     }
 
     private func deletePendingSession() {

@@ -32,7 +32,11 @@ struct SetRowView: View {
     private var previousHint: String? {
         guard let previousSet else { return nil }
         let displayPreviousWeight = unitSettings.unit.convert(fromLbs: previousSet.weight)
-        return "Last: \(previousSet.reps) × \(String(format: "%.0f", displayPreviousWeight)) \(unitSettings.unit.rawValue)"
+        var hint = "Last: \(previousSet.reps) × \(String(format: "%.0f", displayPreviousWeight)) \(unitSettings.unit.rawValue)"
+        if previousSet.takenToFailure {
+            hint += " · Failure"
+        }
+        return hint
     }
     
     var body: some View {
@@ -59,6 +63,18 @@ struct SetRowView: View {
                 
                 Text(unitSettings.unit.rawValue)
                     .foregroundStyle(.secondary)
+                
+                Spacer()
+                
+                Button {
+                    set.takenToFailure.toggle()
+                    try? modelContext.save()
+                } label: {
+                    Image(systemName: set.takenToFailure ? "flame.fill" : "flame")
+                        .foregroundStyle(set.takenToFailure ? .orange : .secondary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel(set.takenToFailure ? "Taken to failure" : "Not taken to failure")
             }
             
             if let previousHint {

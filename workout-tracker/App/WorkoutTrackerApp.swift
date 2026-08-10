@@ -34,5 +34,6 @@ struct WorkoutTrackerApp: App {
         }
         .modelContainer(sharedModelContainer)
         .environmentObject(unitSettings)
+        
     }
 }

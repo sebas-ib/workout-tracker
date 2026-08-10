@@ -13,9 +13,17 @@ struct NewSessionView: View {
 
     @Query(sort: \WorkoutSession.startTime, order: .reverse) private var allSessions: [WorkoutSession]
 
-    @State private var sessionName: String = ""
-
+    let targetDate: Date
     let onCreate: (WorkoutSession) -> Void
+
+    @State private var sessionName: String = ""
+    @State private var sessionStartTime: Date
+
+    init(targetDate: Date, onCreate: @escaping (WorkoutSession) -> Void) {
+        self.targetDate = targetDate
+        self.onCreate = onCreate
+        _sessionStartTime = State(initialValue: Self.defaultStartTime(for: targetDate))
+    }
 
     private var pastSessions: [WorkoutSession] {
         allSessions.filter { !$0.exercises.isEmpty }
@@ -26,6 +34,20 @@ struct NewSessionView: View {
             Form {
                 Section("Session Name (Optional)") {
                     TextField("e.g. Push Day", text: $sessionName)
+                }
+
+                Section("Date & Time") {
+                    DatePicker(
+                        "Date",
+                        selection: $sessionStartTime,
+                        in: ...Date(),
+                        displayedComponents: .date
+                    )
+                    DatePicker(
+                        "Time",
+                        selection: $sessionStartTime,
+                        displayedComponents: .hourAndMinute
+                    )
                 }
 
                 Section {
@@ -46,7 +68,7 @@ struct NewSessionView: View {
                                     Text(session.name ?? "Session")
                                         .font(.headline)
                                         .foregroundStyle(.primary)
-                                    Text(session.startTime, format: .dateTime.month().day().year().hour().minute())
+                                    Text(session.startTime, style: .date)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Text(session.exercises.map { $0.exercise.name }.joined(separator: ", "))
@@ -68,20 +90,36 @@ struct NewSessionView: View {
         }
     }
 
+    /// Combines the target date with the current clock time as a sensible starting default.
+    private static func defaultStartTime(for targetDate: Date) -> Date {
+        let calendar = Calendar.current
+        let now = Date()
+        let timeComponents = calendar.dateComponents([.hour, .minute, .second], from: now)
+        return calendar.date(
+            bySettingHour: timeComponents.hour ?? 0,
+            minute: timeComponents.minute ?? 0,
+            second: timeComponents.second ?? 0,
+            of: targetDate
+        ) ?? targetDate
+    }
+
     private func createBlankSession() {
-        let session = WorkoutSession(startTime: Date(), name: sessionName.isEmpty ? nil : sessionName)
+        let session = WorkoutSession(
+            startTime: sessionStartTime,
+            name: sessionName.isEmpty ? nil : sessionName
+        )
         onCreate(session)
         dismiss()
     }
 
     private func createSessionFromTemplate(_ template: WorkoutSession) {
         let session = WorkoutSession(
-            startTime: Date(),
+            startTime: sessionStartTime,
             name: sessionName.isEmpty ? template.name : sessionName
         )
 
         for templateExercise in template.exercises {
-            let newWorkoutExercise = WorkoutExercise(exercise: templateExercise.exercise)
+            let newWorkoutExercise = WorkoutExercise(exercise: templateExercise.exercise, loggedAt: sessionStartTime)
             let sortedTemplateSets = templateExercise.sets.sorted(by: { $0.order < $1.order })
 
             for templateSet in sortedTemplateSets {

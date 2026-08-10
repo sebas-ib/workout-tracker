@@ -12,6 +12,7 @@ struct ConsistencyGraphView: View {
     @Query private var workoutDays: [WorkoutDay]
     
     private let calendar = Calendar.current
+    private let accentColor = Color.blue
     
     private var weeksToShow: Int {
         unitSettings.consistencyWeeksToShow
@@ -40,7 +41,6 @@ struct ConsistencyGraphView: View {
         }
     }
     
-    /// Returns a month label for each week column, only where a new month begins that week; nil otherwise.
     private var monthLabels: [Int: String] {
         var labels: [Int: String] = [:]
         var lastMonth: Int? = nil
@@ -62,12 +62,11 @@ struct ConsistencyGraphView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             GeometryReader { geometry in
                 ScrollViewReader { proxy in
                     ScrollView(.horizontal, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            // Month label row
+                        VStack(alignment: .leading, spacing: 4) {
                             HStack(alignment: .top, spacing: 4) {
                                 ForEach(weeks.indices, id: \.self) { weekIndex in
                                     Text(monthLabels[weekIndex] ?? "")
@@ -75,19 +74,19 @@ struct ConsistencyGraphView: View {
                                         .foregroundStyle(.secondary)
                                         .lineLimit(1)
                                         .fixedSize()
-                                        .frame(width: 12, alignment: .leading)
+                                        .frame(width: 14, alignment: .leading)
                                 }
                             }
                             
-                            // Squares grid
                             HStack(alignment: .top, spacing: 4) {
                                 ForEach(weeks.indices, id: \.self) { weekIndex in
                                     VStack(spacing: 4) {
                                         ForEach(weeks[weekIndex], id: \.self) { date in
-                                            DaySquare(
+                                            DayDot(
                                                 date: date,
                                                 intensity: activityMap[date] ?? 0,
-                                                isFuture: date > calendar.startOfDay(for: Date())
+                                                isFuture: date > calendar.startOfDay(for: Date()),
+                                                accentColor: accentColor
                                             )
                                         }
                                     }
@@ -106,16 +105,16 @@ struct ConsistencyGraphView: View {
                     }
                 }
             }
-            .frame(height: 7 * 16 + 14) // grid height + room for month label row
+            .frame(height: 7 * 17 + 16)
             
-            HStack(spacing: 4) {
+            HStack(spacing: 6) {
                 Text("Less")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 ForEach(0..<5) { level in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(colorForLevel(level))
-                        .frame(width: 10, height: 10)
+                    Circle()
+                        .fill(colorForLevel(level, accentColor: accentColor))
+                        .frame(width: 9, height: 9)
                 }
                 Text("More")
                     .font(.caption2)
@@ -123,8 +122,14 @@ struct ConsistencyGraphView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(
+            Color(uiColor: UIColor { traitCollection in
+                traitCollection.userInterfaceStyle == .dark
+                    ? UIColor.secondarySystemBackground
+                    : UIColor.tertiarySystemBackground
+            })
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
     private func scrollToMostRecentWeek(proxy: ScrollViewProxy) {
@@ -133,10 +138,11 @@ struct ConsistencyGraphView: View {
     }
 }
 
-private struct DaySquare: View {
+private struct DayDot: View {
     let date: Date
     let intensity: Int
     let isFuture: Bool
+    let accentColor: Color
     
     private var level: Int {
         switch intensity {
@@ -149,18 +155,18 @@ private struct DaySquare: View {
     }
     
     var body: some View {
-        RoundedRectangle(cornerRadius: 2)
-            .fill(isFuture ? Color.clear : colorForLevel(level))
-            .frame(width: 12, height: 12)
+        Circle()
+            .fill(isFuture ? Color.clear : colorForLevel(level, accentColor: accentColor))
+            .frame(width: 14, height: 14)
     }
 }
 
-private func colorForLevel(_ level: Int) -> Color {
+private func colorForLevel(_ level: Int, accentColor: Color) -> Color {
     switch level {
     case 0: return Color(.systemGray5)
-    case 1: return Color.green.opacity(0.3)
-    case 2: return Color.green.opacity(0.5)
-    case 3: return Color.green.opacity(0.75)
-    default: return Color.green
+    case 1: return accentColor.opacity(0.25)
+    case 2: return accentColor.opacity(0.45)
+    case 3: return accentColor.opacity(0.7)
+    default: return accentColor
     }
 }

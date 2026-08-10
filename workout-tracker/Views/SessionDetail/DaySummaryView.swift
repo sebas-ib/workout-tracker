@@ -58,7 +58,13 @@ struct DaySummaryView: View {
                                 .font(.caption2)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
-                                .background(Color(.tertiarySystemBackground))
+                                .background(
+                                    Color(uiColor: UIColor { traitCollection in
+                                    traitCollection.userInterfaceStyle == .dark
+                                        ? UIColor.tertiarySystemBackground
+                                        : UIColor.secondarySystemBackground
+                                    })
+                                )
                                 .clipShape(Capsule())
                         }
                     }

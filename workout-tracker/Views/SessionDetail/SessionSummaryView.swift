@@ -53,7 +53,13 @@ struct SessionSummaryView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(
+            Color(uiColor: UIColor { traitCollection in
+                traitCollection.userInterfaceStyle == .dark
+                    ? UIColor.secondarySystemBackground
+                    : UIColor.tertiarySystemBackground
+            })
+        )
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

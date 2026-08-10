@@ -61,7 +61,7 @@ struct SessionListView: View {
             .buttonStyle(.bordered)
             .padding(.horizontal)
             .sheet(isPresented: $showingNewSessionSheet) {
-                NewSessionView { newSession in
+                NewSessionView(targetDate: workoutDay.date) { newSession in
                     workoutDay.sessions.append(newSession)
                     saveChanges()
                     onSessionCreated(newSession)

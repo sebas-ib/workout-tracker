@@ -13,10 +13,12 @@ class ExerciseSet {
     var reps: Int
     var weight: Double
     var order: Int
+    var takenToFailure: Bool
     
-    init(reps: Int, weight: Double, order: Int) {
+    init(reps: Int, weight: Double, order: Int, takenToFailure: Bool = false) {
         self.reps = reps
         self.weight = weight
         self.order = order
+        self.takenToFailure = takenToFailure
     }
 }

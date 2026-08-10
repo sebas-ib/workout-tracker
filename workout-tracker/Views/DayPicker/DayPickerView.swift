@@ -36,6 +36,8 @@ struct DayPickerView: View {
                             EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0)
                         )
                         .listRowBackground(Color.clear)
+                } header: {
+                    Text("Consistency Graph")
                 }
 
                 Section {
@@ -49,7 +51,13 @@ struct DayPickerView: View {
                         }
                     }
                     .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color(.secondarySystemBackground))
+                    .listRowBackground(
+                        Color(uiColor: UIColor { traitCollection in
+                            traitCollection.userInterfaceStyle == .dark
+                                ? UIColor.secondarySystemBackground
+                                : UIColor.tertiarySystemBackground
+                        })
+                    )
                     .padding()
                     
                     if datePickerExpanded {
@@ -65,8 +73,10 @@ struct DayPickerView: View {
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
+                } header: {
+                    Text("Date Picker")
                 }
-
+                
                 if let day = selectedDay, !day.sessions.isEmpty {
                     SessionListView(workoutDay: day) { newSession in
                         scheduleNavigation(to: newSession)
@@ -100,7 +110,7 @@ struct DayPickerView: View {
                 }
             }
             .sheet(isPresented: $showingNewSessionSheet) {
-                NewSessionView { newSession in
+                NewSessionView(targetDate: selectedDate) { newSession in
                     attachNewSession(newSession)
                     scheduleNavigation(to: newSession)
                 }
@@ -149,6 +159,8 @@ struct DayPickerView: View {
             .frame(maxWidth: .infinity)
             .frame(minHeight: 220)
             .padding(.vertical, 20)
+        } header: {
+            Text("Sessions")
         }
         .transition(
             .asymmetric(

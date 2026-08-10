@@ -40,9 +40,13 @@ struct SessionDetailView: View {
                         ExerciseSetsView(workoutExercise: workoutExercise, focusedField: $focusedField)
                     } header: {
                         HStack {
-                            Text(workoutExercise.exercise.name)
-                                .font(.headline)
-                                .textCase(nil)
+                            NavigationLink {
+                                ExerciseProgressView(exercise: workoutExercise.exercise)
+                            } label: {
+                                Text(workoutExercise.exercise.name)
+                                    .font(.headline)
+                                    .textCase(nil)
+                            }
                             Spacer()
                             Button(role: .destructive) {
                                 exercisePendingDeletion = workoutExercise
@@ -126,7 +130,7 @@ struct SessionDetailView: View {
     }
         
     private func addExercise(_ exercise: Exercise) {
-        let workoutExercise = WorkoutExercise(exercise: exercise)
+        let workoutExercise = WorkoutExercise(exercise: exercise, loggedAt: session.startTime)
         session.exercises.append(workoutExercise)
         
         do {

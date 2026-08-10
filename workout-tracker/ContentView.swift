@@ -11,10 +11,20 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     
     var body: some View {
-        DayPickerView()
-            .task {
-                ExerciseSeedData.seedIfNeeded(context: modelContext)
-            }
+        TabView {
+            DayPickerView()
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
+                }
+            
+            ExerciseListProgressView()
+                .tabItem {
+                    Label("Progress", systemImage: "chart.line.uptrend.xyaxis")
+                }
+        }
+        .task {
+            ExerciseSeedData.seedIfNeeded(context: modelContext)
+        }
     }
 }
 

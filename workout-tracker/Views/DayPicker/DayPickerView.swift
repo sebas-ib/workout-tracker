@@ -14,10 +14,7 @@ struct DayPickerView: View {
     @Query(sort: \WorkoutDay.date, order: .reverse)
     private var workoutDays: [WorkoutDay]
 
-    @State private var selectedDate = Calendar.current.startOfDay(
-        for: Date()
-    )
-
+    @State private var selectedDate = Calendar.current.startOfDay(for: Date())
     @State private var saveError: Error?
     @State private var showingNewSessionSheet = false
     @State private var newlyCreatedSession: WorkoutSession?
@@ -25,10 +22,7 @@ struct DayPickerView: View {
 
     private var selectedDay: WorkoutDay? {
         workoutDays.first {
-            Calendar.current.isDate(
-                $0.date,
-                inSameDayAs: selectedDate
-            )
+            Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
         }
     }
 
@@ -39,30 +33,56 @@ struct DayPickerView: View {
                     ConsistencyGraphView()
                         .frame(maxWidth: .infinity)
                         .listRowInsets(
-                            EdgeInsets(
-                                top: 8,
-                                leading: 0,
-                                bottom: 8,
-                                trailing: 0
-                            )
+                            EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0)
                         )
                         .listRowBackground(Color.clear)
                 }
 
                 Section {
-                    datePickerContent
+                    DaySummaryView(
+                        date: selectedDate,
+                        day: selectedDay,
+                        isExpanded: datePickerExpanded
+                    ) {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                            datePickerExpanded.toggle()
+                        }
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color(.secondarySystemBackground))
+                    .padding()
+                    
+                    if datePickerExpanded {
+                        DatePicker(
+                            "Select Day",
+                            selection: $selectedDate,
+                            in: ...Date(),
+                            displayedComponents: .date
+                        )
+                        .datePickerStyle(.graphical)
+                        .onChange(of: selectedDate) { _, newValue in
+                            selectedDate = Calendar.current.startOfDay(for: newValue)
+                        }
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
 
                 if let day = selectedDay, !day.sessions.isEmpty {
-                    dayContentSection(for: day)
+                    SessionListView(workoutDay: day) { newSession in
+                        scheduleNavigation(to: newSession)
+                    }
+                    .transition(
+                        .asymmetric(
+                            insertion: .move(edge: .bottom).combined(with: .opacity),
+                            removal: .move(edge: .bottom).combined(with: .opacity)
+                        )
+                    )
                 } else {
                     emptyWorkoutSection
                         .transition(
                             .asymmetric(
-                                insertion: .scale(scale: 0.95)
-                                    .combined(with: .opacity),
-                                removal: .scale(scale: 0.95)
-                                    .combined(with: .opacity)
+                                insertion: .scale(scale: 0.95).combined(with: .opacity),
+                                removal: .scale(scale: 0.95).combined(with: .opacity)
                             )
                         )
                 }
@@ -104,67 +124,6 @@ struct DayPickerView: View {
         }
     }
 
-    // MARK: - Date Picker
-
-    @ViewBuilder
-    private var datePickerContent: some View {
-        Button {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                datePickerExpanded.toggle()
-            }
-        } label: {
-            HStack {
-                Text(selectedDate, style: .date)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                Spacer()
-                Image(systemName: "chevron.down")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(datePickerExpanded ? 180 : 0))
-            }
-        }
-
-        if datePickerExpanded {
-            DatePicker(
-                "Select Day",
-                selection: $selectedDate,
-                in: ...Date(),
-                displayedComponents: .date
-            )
-            .datePickerStyle(.graphical)
-            .onChange(of: selectedDate) { _, newValue in
-                selectedDate = Calendar.current.startOfDay(for: newValue)
-            }
-            .transition(.opacity.combined(with: .move(edge: .top)))
-        }
-    }
-
-    // MARK: - Day Content (populated)
-
-    @ViewBuilder
-    private func dayContentSection(for day: WorkoutDay) -> some View {
-        DaySummaryView(day: day)
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Color.clear)
-            .transition(
-                .asymmetric(
-                    insertion: .move(edge: .top).combined(with: .opacity),
-                    removal: .move(edge: .top).combined(with: .opacity)
-                )
-            )
-
-        SessionListView(workoutDay: day) { newSession in
-            scheduleNavigation(to: newSession)
-        }
-        .transition(
-            .asymmetric(
-                insertion: .move(edge: .bottom).combined(with: .opacity),
-                removal: .move(edge: .bottom).combined(with: .opacity)
-            )
-        )
-    }
-
     // MARK: - Empty State
 
     private var emptyWorkoutSection: some View {
@@ -173,9 +132,7 @@ struct DayPickerView: View {
                 ContentUnavailableView(
                     "No Workouts Logged",
                     systemImage: "figure.strengthtraining.traditional",
-                    description: Text(
-                        "Start a session to begin tracking your workout."
-                    )
+                    description: Text("Start a session to begin tracking your workout.")
                 )
 
                 Button {
@@ -203,13 +160,9 @@ struct DayPickerView: View {
 
     private var saveErrorBinding: Binding<Bool> {
         Binding(
-            get: {
-                saveError != nil
-            },
+            get: { saveError != nil },
             set: { isPresented in
-                if !isPresented {
-                    saveError = nil
-                }
+                if !isPresented { saveError = nil }
             }
         )
     }
@@ -235,8 +188,6 @@ struct DayPickerView: View {
     }
     
     private func scheduleNavigation(to session: WorkoutSession) {
-        // Let the sheet's dismiss animation finish before pushing into the new session,
-        // so the two transitions read as sequential rather than simultaneous.
         DispatchQueue.main.asyncAfter(deadline: .now()) {
             newlyCreatedSession = session
         }

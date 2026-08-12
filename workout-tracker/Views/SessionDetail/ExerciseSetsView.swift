@@ -23,14 +23,14 @@ struct ExerciseSetsView: View {
     }
     
     private func previousSet(forOrder order: Int) -> ExerciseSet? {
-        previousWorkoutExercise?.sets.sorted(by: { $0.order < $1.order })
-            .first { $0.order == order }
+        previousWorkoutExercise?.sets.sorted(by: { $0.order < $1.order }).first { $0.order == order }
     }
     
     var body: some View {
         ForEach(workoutExercise.sets.sorted(by: { $0.order < $1.order })) { set in
             SetRowView(
                 set: set,
+                loggingType: workoutExercise.exercise.loggingType,
                 focusedField: focusedField,
                 previousSet: previousSet(forOrder: set.order)
             )
@@ -47,8 +47,7 @@ struct ExerciseSetsView: View {
     
     private func addSet() {
         let nextOrder = (workoutExercise.sets.map(\.order).max() ?? 0) + 1
-        let newSet = ExerciseSet(reps: 0, weight: 0, order: nextOrder)
-        workoutExercise.sets.append(newSet)
+        workoutExercise.sets.append(ExerciseSet(order: nextOrder))
         try? modelContext.save()
     }
     
@@ -60,14 +59,10 @@ struct ExerciseSetsView: View {
         workoutExercise.sets.removeAll { deletedSet in
             offsets.contains { sorted[$0].persistentModelID == deletedSet.persistentModelID }
         }
-        
         renumberSets()
-        
         try? modelContext.save()
     }
     
-    /// Re-assigns order values 1, 2, 3... sequentially based on current position,
-    /// so deleting set 4 out of 5 shifts what was set 5 down to become set 4.
     private func renumberSets() {
         let sorted = workoutExercise.sets.sorted(by: { $0.order < $1.order })
         for (index, set) in sorted.enumerated() {

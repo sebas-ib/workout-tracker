@@ -14,12 +14,36 @@ struct ExerciseProgressView: View {
     
     @Query(sort: \WorkoutExercise.loggedAt, order: .forward) private var allWorkoutExercises: [WorkoutExercise]
     
-    private enum Metric: String, CaseIterable {
-        case maxWeight = "Max Weight"
-        case volume = "Volume"
+    private var loggingType: ExerciseLoggingType {
+        exercise.loggingType
     }
     
-    @State private var selectedMetric: Metric = .maxWeight
+    private enum Metric: String, CaseIterable {
+        case primary
+        case secondary
+        
+        func label(for type: ExerciseLoggingType) -> String {
+            switch type {
+            case .weightReps: return self == .primary ? "Max Weight" : "Volume"
+            case .bodyweightReps: return self == .primary ? "Max Reps" : "Weight Modifier"
+            case .time: return "Duration"
+            case .timeWeight: return self == .primary ? "Duration" : "Weight"
+            case .distanceTime: return self == .primary ? "Distance" : "Pace"
+            case .repsOnly: return "Max Reps"
+            }
+        }
+    }
+    
+    private var availableMetrics: [Metric] {
+        switch loggingType {
+        case .weightReps, .bodyweightReps, .timeWeight, .distanceTime:
+            return [.primary, .secondary]
+        case .time, .repsOnly:
+            return [.primary]
+        }
+    }
+    
+    @State private var selectedMetric: Metric = .primary
     
     private var history: [WorkoutExercise] {
         allWorkoutExercises.filter { $0.exercise.persistentModelID == exercise.persistentModelID }
@@ -31,26 +55,104 @@ struct ExerciseProgressView: View {
         let value: Double
     }
     
+    private var unitLabel: String {
+        switch loggingType {
+        case .weightReps, .timeWeight:
+            return selectedMetric == .primary && loggingType == .timeWeight ? "sec" : unitSettings.unit.rawValue
+        case .bodyweightReps:
+            return selectedMetric == .primary ? "reps" : unitSettings.unit.rawValue
+        case .time:
+            return "sec"
+        case .distanceTime:
+            return selectedMetric == .primary ? "mi" : "min/mi"
+        case .repsOnly:
+            return "reps"
+        }
+    }
+    
     private var dataPoints: [DataPoint] {
         history.compactMap { instance in
-            switch selectedMetric {
-            case .maxWeight:
+            guard let value = metricValue(for: instance) else { return nil }
+            return DataPoint(date: instance.loggedAt, value: value)
+        }
+    }
+    
+    private func metricValue(for instance: WorkoutExercise) -> Double? {
+        switch loggingType {
+        case .weightReps:
+            if selectedMetric == .primary {
                 guard let maxWeight = instance.sets.map(\.weight).max(), maxWeight > 0 else { return nil }
-                return DataPoint(date: instance.loggedAt, value: unitSettings.unit.convert(fromLbs: maxWeight))
-            case .volume:
+                return unitSettings.unit.convert(fromLbs: maxWeight)
+            } else {
                 let volume = WorkoutCalculations.volume(for: instance)
                 guard volume > 0 else { return nil }
-                return DataPoint(date: instance.loggedAt, value: unitSettings.unit.convert(fromLbs: volume))
+                return unitSettings.unit.convert(fromLbs: volume)
             }
+            
+        case .bodyweightReps:
+            if selectedMetric == .primary {
+                guard let maxReps = instance.sets.map(\.reps).max(), maxReps > 0 else { return nil }
+                return Double(maxReps)
+            } else {
+                guard let modifier = instance.sets.map(\.bodyWeightModifier).max(by: { abs($0) < abs($1) }) else { return nil }
+                return unitSettings.unit.convert(fromLbs: modifier)
+            }
+            
+        case .time:
+            guard let maxDuration = instance.sets.map(\.durationSeconds).max(), maxDuration > 0 else { return nil }
+            return Double(maxDuration)
+            
+        case .timeWeight:
+            if selectedMetric == .primary {
+                guard let maxDuration = instance.sets.map(\.durationSeconds).max(), maxDuration > 0 else { return nil }
+                return Double(maxDuration)
+            } else {
+                guard let maxWeight = instance.sets.map(\.weight).max(), maxWeight > 0 else { return nil }
+                return unitSettings.unit.convert(fromLbs: maxWeight)
+            }
+            
+        case .distanceTime:
+            if selectedMetric == .primary {
+                guard let maxDistance = instance.sets.map(\.distance).max(), maxDistance > 0 else { return nil }
+                return maxDistance
+            } else {
+                // Pace = minutes per mile, using the best (fastest) set
+                let paces: [Double] = instance.sets.compactMap { set in
+                    guard set.distance > 0, set.durationSeconds > 0 else { return nil }
+                    return (Double(set.durationSeconds) / 60) / set.distance
+                }
+                return paces.min()
+            }
+            
+        case .repsOnly:
+            guard let maxReps = instance.sets.map(\.reps).max(), maxReps > 0 else { return nil }
+            return Double(maxReps)
         }
     }
     
     private var bestValue: Double? {
-        dataPoints.map(\.value).max()
+        if loggingType == .distanceTime && selectedMetric == .secondary {
+            return dataPoints.map(\.value).min() // lower pace = better
+        }
+        return dataPoints.map(\.value).max()
     }
     
     private var mostRecentValue: Double? {
         dataPoints.last?.value
+    }
+    
+    private func formatValue(_ value: Double) -> String {
+        if loggingType == .time || (loggingType == .timeWeight && selectedMetric == .primary) {
+            let minutes = Int(value) / 60
+            let seconds = Int(value) % 60
+            return String(format: "%d:%02d", minutes, seconds)
+        }
+        if loggingType == .distanceTime && selectedMetric == .secondary {
+            let minutes = Int(value)
+            let seconds = Int((value - Double(minutes)) * 60)
+            return String(format: "%d:%02d", minutes, seconds)
+        }
+        return String(format: "%.1f", value)
     }
     
     var body: some View {
@@ -64,20 +166,22 @@ struct ExerciseProgressView: View {
                     )
                     .padding(.top, 40)
                 } else {
-                    Picker("Metric", selection: $selectedMetric) {
-                        ForEach(Metric.allCases, id: \.self) { metric in
-                            Text(metric.rawValue).tag(metric)
+                    if availableMetrics.count > 1 {
+                        Picker("Metric", selection: $selectedMetric) {
+                            ForEach(availableMetrics, id: \.self) { metric in
+                                Text(metric.label(for: loggingType)).tag(metric)
+                            }
                         }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal)
                     }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
                     
                     HStack(spacing: 20) {
                         if let bestValue {
-                            StatBlock(label: "Best", value: bestValue, unit: unitSettings.unit.rawValue)
+                            StatBlock(label: "Best", value: formatValue(bestValue), unit: unitLabel)
                         }
                         if let mostRecentValue {
-                            StatBlock(label: "Most Recent", value: mostRecentValue, unit: unitSettings.unit.rawValue)
+                            StatBlock(label: "Most Recent", value: formatValue(mostRecentValue), unit: unitLabel)
                         }
                     }
                     .padding(.horizontal)
@@ -85,20 +189,20 @@ struct ExerciseProgressView: View {
                     Chart(dataPoints) { point in
                         LineMark(
                             x: .value("Date", point.date),
-                            y: .value(selectedMetric.rawValue, point.value)
+                            y: .value(selectedMetric.label(for: loggingType), point.value)
                         )
                         .interpolationMethod(.catmullRom)
                         .foregroundStyle(.blue)
                         
                         PointMark(
                             x: .value("Date", point.date),
-                            y: .value(selectedMetric.rawValue, point.value)
+                            y: .value(selectedMetric.label(for: loggingType), point.value)
                         )
                         .foregroundStyle(.blue)
                     }
                     .frame(height: 220)
                     .padding(.horizontal)
-                    .chartYAxisLabel(unitSettings.unit.rawValue)
+                    .chartYAxisLabel(unitLabel)
                 }
             }
             .padding(.vertical)
@@ -110,7 +214,7 @@ struct ExerciseProgressView: View {
 
 private struct StatBlock: View {
     let label: String
-    let value: Double
+    let value: String
     let unit: String
     
     var body: some View {
@@ -118,7 +222,7 @@ private struct StatBlock: View {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("\(Int(value)) \(unit)")
+            Text("\(value) \(unit)")
                 .font(.title3.bold())
         }
     }

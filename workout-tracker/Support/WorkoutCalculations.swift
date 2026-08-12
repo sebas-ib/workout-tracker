@@ -10,7 +10,8 @@ enum WorkoutCalculations {
     
     /// Total volume for a single exercise = sum of (reps × weight) across all its sets
     static func volume(for workoutExercise: WorkoutExercise) -> Double {
-        workoutExercise.sets.reduce(0) { total, set in
+        guard workoutExercise.exercise.loggingType.usesWeight else { return 0 }
+        return workoutExercise.sets.reduce(0) { total, set in
             total + (Double(set.reps) * set.weight)
         }
     }

@@ -2,47 +2,47 @@ import Foundation
 import SwiftData
 
 enum ExerciseSeedData {
-    static let starterExercises: [(name: String, primary: MuscleGroup, secondary: MuscleGroup?)] = [
+    static let starterExercises: [(name: String, primary: MuscleGroup, secondary: MuscleGroup?, type: ExerciseLoggingType)] = [
         // Chest
-        ("Bench Press", .chest, .arms),
-        ("Incline Bench Press", .chest, .shoulders),
-        ("Dumbbell Press", .chest, .arms),
-        ("Push-Up", .chest, .arms),
-        ("Chest Fly", .chest, nil),
+        ("Bench Press", .chest, .arms, .weightReps),
+        ("Incline Bench Press", .chest, .shoulders, .weightReps),
+        ("Dumbbell Press", .chest, .arms, .weightReps),
+        ("Push-Up", .chest, .arms, .bodyweightReps),
+        ("Chest Fly", .chest, nil, .weightReps),
 
         // Back
-        ("Deadlift", .back, .legs),
-        ("Pull-Up", .back, .arms),
-        ("Lat Pulldown", .back, .arms),
-        ("Bent-Over Row", .back, .arms),
-        ("Seated Cable Row", .back, .arms),
+        ("Deadlift", .back, .legs, .weightReps),
+        ("Pull-Up", .back, .arms, .bodyweightReps),
+        ("Lat Pulldown", .back, .arms, .weightReps),
+        ("Bent-Over Row", .back, .arms, .weightReps),
+        ("Seated Cable Row", .back, .arms, .weightReps),
 
         // Legs
-        ("Squat", .legs, .core),
-        ("Leg Press", .legs, nil),
-        ("Lunges", .legs, nil),
-        ("Leg Curl", .legs, nil),
-        ("Leg Extension", .legs, nil),
-        ("Calf Raise", .legs, nil),
+        ("Squat", .legs, .core, .weightReps),
+        ("Leg Press", .legs, nil, .weightReps),
+        ("Lunges", .legs, nil, .weightReps),
+        ("Leg Curl", .legs, nil, .weightReps),
+        ("Leg Extension", .legs, nil, .weightReps),
+        ("Calf Raise", .legs, nil, .weightReps),
 
         // Shoulders
-        ("Overhead Press", .shoulders, .arms),
-        ("Lateral Raise", .shoulders, nil),
-        ("Front Raise", .shoulders, nil),
-        ("Face Pull", .shoulders, .back),
+        ("Overhead Press", .shoulders, .arms, .weightReps),
+        ("Lateral Raise", .shoulders, nil, .weightReps),
+        ("Front Raise", .shoulders, nil, .weightReps),
+        ("Face Pull", .shoulders, .back, .weightReps),
 
         // Arms
-        ("Bicep Curl", .arms, nil),
-        ("Hammer Curl", .arms, nil),
-        ("Tricep Pushdown", .arms, nil),
-        ("Tricep Dip", .arms, .chest),
-        ("Skull Crusher", .arms, nil),
+        ("Bicep Curl", .arms, nil, .weightReps),
+        ("Hammer Curl", .arms, nil, .weightReps),
+        ("Tricep Pushdown", .arms, nil, .weightReps),
+        ("Tricep Dip", .arms, .chest, .bodyweightReps),
+        ("Skull Crusher", .arms, nil, .weightReps),
 
         // Core
-        ("Plank", .core, nil),
-        ("Crunch", .core, nil),
-        ("Russian Twist", .core, nil),
-        ("Hanging Leg Raise", .core, nil)
+        ("Plank", .core, nil, .time),
+        ("Crunch", .core, nil, .repsOnly),
+        ("Russian Twist", .core, nil, .repsOnly),
+        ("Hanging Leg Raise", .core, .back, .bodyweightReps)
     ]
 }
 
@@ -62,7 +62,8 @@ extension ExerciseSeedData {
                 name: entry.name,
                 isCustom: false,
                 muscleGroup: entry.primary,
-                secondaryMuscleGroup: entry.secondary
+                secondaryMuscleGroup: entry.secondary,
+                loggingType: entry.type
             )
             context.insert(exercise)
         }
@@ -82,6 +83,7 @@ extension ExerciseSeedData {
             if exercise.muscleGroupRawValue.isEmpty, let match = nameToEntry[exercise.name] {
                 exercise.muscleGroup = match.primary
                 exercise.secondaryMuscleGroup = match.secondary
+                exercise.loggingType = match.type
                 didUpdate = true
             }
         }
@@ -91,4 +93,3 @@ extension ExerciseSeedData {
         }
     }
 }
-

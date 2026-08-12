@@ -16,6 +16,7 @@ struct NewExerciseView: View {
     let name: String
     let onCreate: (Exercise) -> Void
     
+    @State private var loggingType: ExerciseLoggingType = .weightReps
     @State private var primaryGroup: MuscleGroup = .other
     @State private var secondaryGroup: MuscleGroup?
     @State private var includeSecondary = false
@@ -26,6 +27,16 @@ struct NewExerciseView: View {
                 Section("Exercise") {
                     Text(name)
                         .font(.headline)
+                }
+                
+                Section("How is this tracked?") {
+                    Picker("Type", selection: $loggingType) {
+                        ForEach(ExerciseLoggingType.allCases, id: \.self) { type in
+                            Text(type.rawValue).tag(type)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
                 }
                 
                 Section("Primary Muscle Group") {
@@ -72,7 +83,8 @@ struct NewExerciseView: View {
             name: name,
             isCustom: true,
             muscleGroup: primaryGroup,
-            secondaryMuscleGroup: includeSecondary ? secondaryGroup : nil
+            secondaryMuscleGroup: includeSecondary ? secondaryGroup : nil,
+            loggingType: loggingType
         )
         modelContext.insert(exercise)
         try? modelContext.save()

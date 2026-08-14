@@ -12,7 +12,7 @@ struct ConsistencyGraphView: View {
     @Query private var workoutDays: [WorkoutDay]
     
     private let calendar = Calendar.current
-    private let accentColor = Color.blue
+    private let accentColor = Theme.accent
     
     private var weeksToShow: Int {
         unitSettings.consistencyWeeksToShow

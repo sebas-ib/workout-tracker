@@ -30,17 +30,6 @@ struct DayPickerView: View {
         NavigationStack {
             List {
                 Section {
-                    ConsistencyGraphView()
-                        .frame(maxWidth: .infinity)
-                        .listRowInsets(
-                            EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0)
-                        )
-                        .listRowBackground(Color.clear)
-                } header: {
-                    Text("Consistency Graph")
-                }
-
-                Section {
                     DaySummaryView(
                         date: selectedDate,
                         day: selectedDay,

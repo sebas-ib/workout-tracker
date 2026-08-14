@@ -22,6 +22,7 @@ struct ContentView: View {
                     Label("Progress", systemImage: "chart.line.uptrend.xyaxis")
                 }
         }
+        .tint(Theme.accent)
         .task {
             ExerciseSeedData.seedIfNeeded(context: modelContext)
         }

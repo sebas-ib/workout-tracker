@@ -192,13 +192,13 @@ struct ExerciseProgressView: View {
                             y: .value(selectedMetric.label(for: loggingType), point.value)
                         )
                         .interpolationMethod(.catmullRom)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Theme.accent)
                         
                         PointMark(
                             x: .value("Date", point.date),
                             y: .value(selectedMetric.label(for: loggingType), point.value)
                         )
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Theme.accent)
                     }
                     .frame(height: 220)
                     .padding(.horizontal)

@@ -19,24 +19,84 @@ struct DayPickerView: View {
     @State private var showingNewSessionSheet = false
     @State private var newlyCreatedSession: WorkoutSession?
     @State private var datePickerExpanded = false
+    
+    private let calendar = Calendar.current
 
     private var selectedDay: WorkoutDay? {
         workoutDays.first {
-            Calendar.current.isDate($0.date, inSameDayAs: selectedDate)
+            calendar.isDate($0.date, inSameDayAs: selectedDate)
         }
+    }
+    
+    private var isToday: Bool {
+        calendar.isDateInToday(selectedDate)
+    }
+    
+    private var relativeDateLabel: String {
+        if calendar.isDateInToday(selectedDate) { return "Today" }
+        if calendar.isDateInYesterday(selectedDate) { return "Yesterday" }
+        return selectedDate.formatted(.dateTime.weekday(.wide).month(.wide).day())
+    }
+    
+    private var isFutureBlocked: Bool {
+        guard let nextDay = calendar.date(byAdding: .day, value: 1, to: selectedDate) else { return true }
+        return nextDay > calendar.startOfDay(for: Date())
     }
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    DaySummaryView(
-                        date: selectedDate,
-                        day: selectedDay,
-                        isExpanded: datePickerExpanded
-                    ) {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                            datePickerExpanded.toggle()
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Button {
+                                stepDate(by: -1)
+                            } label: {
+                                Image(systemName: "chevron.left")
+                                    .font(.headline)
+                            }
+                            .buttonStyle(.borderless)
+                            
+                            Spacer()
+                            
+                            Button {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                                    datePickerExpanded.toggle()
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Text(relativeDateLabel)
+                                        .font(.headline)
+                                        .foregroundStyle(.primary)
+                                    Image(systemName: "chevron.down")
+                                        .font(.caption)
+                                        .foregroundStyle(Theme.accent)
+                                        .rotationEffect(.degrees(datePickerExpanded ? 180 : 0))
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            
+                            Spacer()
+                            
+                            Button {
+                                stepDate(by: 1)
+                            } label: {
+                                Image(systemName: "chevron.right")
+                                    .font(.headline)
+                            }
+                            .buttonStyle(.borderless)
+                            .disabled(isFutureBlocked)
+                            .opacity(isFutureBlocked ? 0.3 : 1)
+                        }
+                        
+                        DaySummaryView(
+                            date: selectedDate,
+                            day: selectedDay,
+                            isExpanded: datePickerExpanded
+                        ) {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                                datePickerExpanded.toggle()
+                            }
                         }
                     }
                     .listRowInsets(EdgeInsets())
@@ -48,6 +108,22 @@ struct DayPickerView: View {
                         })
                     )
                     .padding()
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 30)
+                            .onEnded { value in
+                                let horizontal = value.translation.width
+                                let vertical = value.translation.height
+                                
+                                guard abs(horizontal) > abs(vertical) else { return }
+                                
+                                if horizontal < 0 {
+                                    stepDate(by: 1)
+                                } else {
+                                    stepDate(by: -1)
+                                }
+                            }
+                    )
                     
                     if datePickerExpanded {
                         DatePicker(
@@ -57,13 +133,12 @@ struct DayPickerView: View {
                             displayedComponents: .date
                         )
                         .datePickerStyle(.graphical)
+                        .tint(Theme.accent)
                         .onChange(of: selectedDate) { _, newValue in
-                            selectedDate = Calendar.current.startOfDay(for: newValue)
+                            selectedDate = calendar.startOfDay(for: newValue)
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
-                } header: {
-                    Text("Date Picker")
                 }
                 
                 if let day = selectedDay, !day.sessions.isEmpty {
@@ -87,13 +162,24 @@ struct DayPickerView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .tint(Theme.accent)
             .navigationTitle("Workout Tracker")
             .toolbar {
+                if !isToday {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Today") {
+                            withAnimation {
+                                selectedDate = calendar.startOfDay(for: Date())
+                            }
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
                         SettingsView()
                     } label: {
-                        Image(systemName: "gearshape")
+                        Image(systemName: "gearshape.fill")
+                            .foregroundStyle(Theme.accent)
                     }
                     .accessibilityLabel("Settings")
                 }
@@ -103,6 +189,7 @@ struct DayPickerView: View {
                     attachNewSession(newSession)
                     scheduleNavigation(to: newSession)
                 }
+                .tint(Theme.accent)
             }
             .navigationDestination(item: $newlyCreatedSession) { session in
                 SessionDetailView(session: session)
@@ -127,12 +214,25 @@ struct DayPickerView: View {
 
     private var emptyWorkoutSection: some View {
         Section {
-            VStack(spacing: 20) {
-                ContentUnavailableView(
-                    "No Workouts Logged",
-                    systemImage: "figure.strengthtraining.traditional",
-                    description: Text("Start a session to begin tracking your workout.")
-                )
+            VStack(spacing: 18) {
+                ZStack {
+                    Circle()
+                        .fill(Theme.accent.opacity(0.12))
+                        .frame(width: 72, height: 72)
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .font(.system(size: 30, weight: .semibold))
+                        .foregroundStyle(Theme.accent)
+                }
+                .padding(.top, 4)
+
+                VStack(spacing: 4) {
+                    Text(isToday ? "No Workout Today" : "No Workout Logged")
+                        .font(.title3.bold())
+                    Text("Tap below to start tracking your workout.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
 
                 Button {
                     showingNewSessionSheet = true
@@ -140,16 +240,19 @@ struct DayPickerView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "plus.circle.fill")
                         Text("Start Session")
+                            .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Theme.accent)
+                .controlSize(.large)
+                .padding(.horizontal, 20)
             }
             .frame(maxWidth: .infinity)
             .frame(minHeight: 220)
             .padding(.vertical, 20)
-        } header: {
-            Text("Sessions")
         }
         .transition(
             .asymmetric(
@@ -166,6 +269,15 @@ struct DayPickerView: View {
                 if !isPresented { saveError = nil }
             }
         )
+    }
+    
+    private func stepDate(by days: Int) {
+        guard let newDate = calendar.date(byAdding: .day, value: days, to: selectedDate) else { return }
+        let today = calendar.startOfDay(for: Date())
+        guard newDate <= today else { return }
+        withAnimation {
+            selectedDate = newDate
+        }
     }
     
     private func attachNewSession(_ session: WorkoutSession) {

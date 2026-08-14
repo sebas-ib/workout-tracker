@@ -10,7 +10,7 @@ struct DaySummaryView: View {
     @EnvironmentObject private var unitSettings: UnitSettings
     
     let date: Date
-    let day: WorkoutDay?  // nil when no workouts logged yet for this date
+    let day: WorkoutDay?
     let isExpanded: Bool
     let onTap: () -> Void
     
@@ -42,34 +42,28 @@ struct DaySummaryView: View {
                 HStack(spacing: 20) {
                     Label("\(sessionCount) session\(sessionCount == 1 ? "" : "s")", systemImage: "figure.strengthtraining.traditional")
                     Label("\(totalSets) sets", systemImage: "list.number")
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .font(.default)
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 
-                if !muscleGroupVolumes.isEmpty {
-                    FlowLayout(spacing: 8) {
-                        ForEach(muscleGroupVolumes.prefix(3), id: \.group) { entry in
-                            Text("\(entry.group.rawValue): \(Int(unitSettings.unit.convert(fromLbs: entry.volume)))\(unitSettings.unit.rawValue)")
-                                .font(.caption2)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(
-                                    Color(uiColor: UIColor { traitCollection in
-                                    traitCollection.userInterfaceStyle == .dark
-                                        ? UIColor.tertiarySystemBackground
-                                        : UIColor.secondarySystemBackground
-                                    })
-                                )
-                                .clipShape(Capsule())
+                Group {
+                    if !muscleGroupVolumes.isEmpty {
+                        FlowLayout(spacing: 8) {
+                            ForEach(muscleGroupVolumes.prefix(3), id: \.group) { entry in
+                                Text("\(entry.group.rawValue): \(Int(unitSettings.unit.convert(fromLbs: entry.volume)))\(unitSettings.unit.rawValue)")
+                                    .font(.caption2.weight(.medium))
+                                    .foregroundStyle(Theme.accent)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(Theme.accent.opacity(0.12))
+                                    .clipShape(Capsule())
+                            }
                         }
                     }
                 }
+                .frame(minHeight: 24, alignment: .topLeading)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)

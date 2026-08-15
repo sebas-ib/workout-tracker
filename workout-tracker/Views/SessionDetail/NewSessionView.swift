@@ -32,11 +32,14 @@ struct NewSessionView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Session Name (Optional)") {
-                    TextField("e.g. Push Day", text: $sessionName)
+                Section {
+                    TextField("Session Name (Optional)", text: $sessionName)
+                        .font(.system(.body, design: .rounded))
+                } header: {
+                    Text("Name")
                 }
 
-                Section("Date & Time") {
+                Section {
                     DatePicker(
                         "Date",
                         selection: $sessionStartTime,
@@ -48,40 +51,51 @@ struct NewSessionView: View {
                         selection: $sessionStartTime,
                         displayedComponents: .hourAndMinute
                     )
+                } header: {
+                    Text("When")
                 }
 
                 Section {
                     Button {
                         createBlankSession()
                     } label: {
-                        Label("Start Session", systemImage: "plus.circle.fill")
+                        HStack(spacing: 10) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Start Blank Session")
+                                    .font(.system(.body, design: .rounded, weight: .semibold))
+                                Text("Build it as you go")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                        }
+                        .padding(.vertical, 4)
                     }
+                    .foregroundStyle(Theme.accent)
                 }
 
                 if !pastSessions.isEmpty {
-                    Section("Use a Previous Session as a Template") {
+                    Section {
                         ForEach(pastSessions.prefix(20)) { session in
                             Button {
                                 createSessionFromTemplate(session)
                             } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(session.name ?? "Session")
-                                        .font(.headline)
-                                        .foregroundStyle(.primary)
-                                    Text(session.startTime, style: .date)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    Text(session.exercises.map { $0.exercise.name }.joined(separator: ", "))
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
+                                TemplateRow(session: session)
                             }
+                            .buttonStyle(.plain)
                         }
+                    } header: {
+                        Text("Or Use a Previous Session")
+                    } footer: {
+                        Text("Exercises and set counts will be copied over. Reps and weights start fresh, with your last numbers shown as a reference.")
                     }
                 }
             }
+            .tint(Theme.accent)
             .navigationTitle("New Session")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -90,7 +104,6 @@ struct NewSessionView: View {
         }
     }
 
-    /// Combines the target date with the current clock time as a sensible starting default.
     private static func defaultStartTime(for targetDate: Date) -> Date {
         let calendar = Calendar.current
         let now = Date()
@@ -131,5 +144,45 @@ struct NewSessionView: View {
 
         onCreate(session)
         dismiss()
+    }
+}
+
+private struct TemplateRow: View {
+    let session: WorkoutSession
+
+    private var exerciseNames: String {
+        session.exercises.map { $0.exercise.name }.joined(separator: ", ")
+    }
+
+    private var setCount: Int {
+        session.exercises.reduce(0) { $0 + $1.sets.count }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(session.name ?? "Session")
+                    .font(.system(.body, design: .rounded, weight: .semibold))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Text(session.startTime, style: .date)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text(exerciseNames)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            HStack(spacing: 4) {
+                Image(systemName: "dumbbell.fill")
+                    .font(.caption2)
+                Text("\(session.exercises.count) exercise\(session.exercises.count == 1 ? "" : "s") · \(setCount) sets")
+                    .font(.caption2)
+            }
+            .foregroundStyle(Theme.accent)
+        }
+        .padding(.vertical, 4)
     }
 }

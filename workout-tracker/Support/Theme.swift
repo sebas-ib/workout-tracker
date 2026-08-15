@@ -7,7 +7,7 @@
 import SwiftUI
 
 enum Theme {
-    static let accent = Color(red: 0.29, green: 0.36, blue: 0.95)
+    static let accent = Color(red: 0.95, green: 0.42, blue: 0.20)
     
     static func title(_ style: Font.TextStyle = .title3, weight: Font.Weight = .bold) -> Font {
         .system(style, design: .rounded, weight: weight)
